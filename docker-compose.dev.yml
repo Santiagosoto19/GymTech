@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    volumes:
+      - ./gateway/src:/app/src
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    volumes:
+      - ./services/auth-service/src:/app/src
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
+    ports:
+      - "3001:3001"
+
+  membership-service:
+    build:
+      context: ./services/membership-service
+      dockerfile: Dockerfile
+    volumes:
+      - ./services/membership-service/src:/app/src
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
+    ports:
+      - "3002:3002"
+
+  activity-service:
+    build:
+      context: ./services/activity-service
+      dockerfile: Dockerfile
+    volumes:
+      - ./services/activity-service/src:/app/src
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
+    ports:
+      - "3003:3003"
+
+  reporting-service:
+    build:
+      context: ./services/reporting-service
+      dockerfile: Dockerfile
+    volumes:
+      - ./services/reporting-service/src:/app/src
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
+    ports:
+      - "3004:3004"
+
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    volumes:
+      - ./services/notification-service/src:/app/src
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
+    ports:
+      - "3005:3005"
+
+  auth-db:
+    ports:
+      - "5433:5432"
+
+  membership-db:
+    ports:
+      - "5434:5432"
+
+  activity-db:
+    ports:
+      - "5435:5432"
+
+  reporting-db:
+    ports:
+      - "5436:5432"
+
+  notification-db:
+    ports:
+      - "5437:5432"

@@ -1,0 +1,206 @@
+version: '3.8'
+
+services:
+  # API Gateway
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: gymtech-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - MEMBERSHIP_SERVICE_URL=http://membership-service:3002
+      - ACTIVITY_SERVICE_URL=http://activity-service:3003
+      - REPORTING_SERVICE_URL=http://reporting-service:3004
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3005
+    depends_on:
+      - auth-service
+      - membership-service
+      - activity-service
+      - reporting-service
+      - notification-service
+    networks:
+      - gymtech-network
+    restart: unless-stopped
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: gymtech-auth-service
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DB_HOST=auth-db
+      - DB_PORT=5432
+      - DB_NAME=auth_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - JWT_SECRET=${AUTH_JWT_SECRET}
+    depends_on:
+      - auth-db
+    networks:
+      - gymtech-network
+    restart: unless-stopped
+
+  # Membership Service
+  membership-service:
+    build:
+      context: ./services/membership-service
+      dockerfile: Dockerfile
+    container_name: gymtech-membership-service
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - DB_HOST=membership-db
+      - DB_PORT=5432
+      - DB_NAME=membership_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+    depends_on:
+      - membership-db
+    networks:
+      - gymtech-network
+    restart: unless-stopped
+
+  # Activity Service
+  activity-service:
+    build:
+      context: ./services/activity-service
+      dockerfile: Dockerfile
+    container_name: gymtech-activity-service
+    environment:
+      - NODE_ENV=production
+      - PORT=3003
+      - DB_HOST=activity-db
+      - DB_PORT=5432
+      - DB_NAME=activity_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+    depends_on:
+      - activity-db
+    networks:
+      - gymtech-network
+    restart: unless-stopped
+
+  # Reporting Service
+  reporting-service:
+    build:
+      context: ./services/reporting-service
+      dockerfile: Dockerfile
+    container_name: gymtech-reporting-service
+    environment:
+      - NODE_ENV=production
+      - PORT=3004
+      - DB_HOST=reporting-db
+      - DB_PORT=5432
+      - DB_NAME=reporting_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+    depends_on:
+      - reporting-db
+    networks:
+      - gymtech-network
+    restart: unless-stopped
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: gymtech-notification-service
+    environment:
+      - NODE_ENV=production
+      - PORT=3005
+      - DB_HOST=notification-db
+      - DB_PORT=5432
+      - DB_NAME=notification_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+    depends_on:
+      - notification-db
+    networks:
+      - gymtech-network
+    restart: unless-stopped
+
+  # Databases
+  auth-db:
+    image: postgres:16-alpine
+    container_name: gymtech-auth-db
+    environment:
+      - POSTGRES_DB=auth_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    networks:
+      - gymtech-network
+    restart: unless-stopped
+
+  membership-db:
+    image: postgres:16-alpine
+    container_name: gymtech-membership-db
+    environment:
+      - POSTGRES_DB=membership_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - membership-db-data:/var/lib/postgresql/data
+    networks:
+      - gymtech-network
+    restart: unless-stopped
+
+  activity-db:
+    image: postgres:16-alpine
+    container_name: gymtech-activity-db
+    environment:
+      - POSTGRES_DB=activity_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - activity-db-data:/var/lib/postgresql/data
+    networks:
+      - gymtech-network
+    restart: unless-stopped
+
+  reporting-db:
+    image: postgres:16-alpine
+    container_name: gymtech-reporting-db
+    environment:
+      - POSTGRES_DB=reporting_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - reporting-db-data:/var/lib/postgresql/data
+    networks:
+      - gymtech-network
+    restart: unless-stopped
+
+  notification-db:
+    image: postgres:16-alpine
+    container_name: gymtech-notification-db
+    environment:
+      - POSTGRES_DB=notification_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - notification-db-data:/var/lib/postgresql/data
+    networks:
+      - gymtech-network
+    restart: unless-stopped
+
+volumes:
+  auth-db-data:
+  membership-db-data:
+  activity-db-data:
+  reporting-db-data:
+  notification-db-data:
+
+networks:
+  gymtech-network:
+    driver: bridge
