@@ -1,0 +1,1 @@
+- [Frontend Rebuild Progress](frontend-rebuild-progress.md) — Progress of the GymTech frontend redesign

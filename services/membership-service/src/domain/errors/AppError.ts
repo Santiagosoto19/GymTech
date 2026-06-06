@@ -1,0 +1,26 @@
+export class AppError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number = 500,
+    public readonly code?: string
+  ) {
+    super(message);
+    this.name = 'AppError';
+  }
+
+  static badRequest(message: string): AppError {
+    return new AppError(message, 400);
+  }
+
+  static notFound(message = 'Not found'): AppError {
+    return new AppError(message, 404);
+  }
+
+  static conflict(message: string): AppError {
+    return new AppError(message, 409);
+  }
+
+  static forbidden(message: string): AppError {
+    return new AppError(message, 403);
+  }
+}

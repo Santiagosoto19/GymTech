@@ -1,23 +1,16 @@
-class ActivityService {
-  constructor() {
-    this.activities = [
-      { id: 'act-1', name: 'Yoga', instructor: 'Ana', schedule: '09:00', capacity: 20 },
-      { id: 'act-2', name: 'Spinning', instructor: 'Carlos', schedule: '10:00', capacity: 15 },
-    ];
-  }
+const activityRepo = require('../infrastructure/activityRepository');
 
+class ActivityService {
   async list() {
-    return this.activities;
+    return await activityRepo.findAll();
   }
 
   async create(data) {
-    const activity = { id: `act-${Date.now()}`, ...data };
-    this.activities.push(activity);
-    return activity;
+    return await activityRepo.create(data);
   }
 
   async getById(id) {
-    const activity = this.activities.find((a) => a.id === id);
+    const activity = await activityRepo.findById(id);
     if (!activity) {
       const err = new Error('Activity not found');
       err.status = 404;
@@ -27,24 +20,34 @@ class ActivityService {
   }
 
   async update(id, data) {
-    const index = this.activities.findIndex((a) => a.id === id);
-    if (index === -1) {
+    const activity = await activityRepo.update(id, data);
+    if (!activity) {
       const err = new Error('Activity not found');
       err.status = 404;
       throw err;
     }
-    this.activities[index] = { ...this.activities[index], ...data };
-    return this.activities[index];
+    return activity;
   }
 
   async remove(id) {
-    const index = this.activities.findIndex((a) => a.id === id);
-    if (index === -1) {
-      const err = new Error('Activity not found');
-      err.status = 404;
+    await activityRepo.delete(id);
+  }
+
+  async registerAttendance(userId, classId) {
+    const currentOccupancy = await activityRepo.checkCapacity(classId);
+    const activity = await activityRepo.findById(classId);
+
+    if (!activity) {
+      throw new Error('La clase no existe');
+    }
+
+    if (currentOccupancy >= activity.capacity) {
+      const err = new Error('La clase está llena');
+      err.status = 400;
       throw err;
     }
-    this.activities.splice(index, 1);
+
+    return await activityRepo.registerAttendance(userId, classId);
   }
 }
 

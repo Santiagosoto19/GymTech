@@ -1,31 +1,18 @@
-class NotificationService {
-  constructor() {
-    this.notifications = [];
-    this.templates = [
-      { id: 'tpl-1', name: 'welcome', subject: 'Welcome to GymTech', channel: 'email' },
-      { id: 'tpl-2', name: 'membership-renewal', subject: 'Renew your membership', channel: 'email' },
-      { id: 'tpl-3', name: 'class-reminder', subject: 'Upcoming class reminder', channel: 'push' },
-    ];
-  }
+const notificationRepo = require('../infrastructure/notificationRepository');
 
+class NotificationService {
   async send(data) {
-    const notification = {
-      id: `notif-${Date.now()}`,
-      status: 'sent',
-      sentAt: new Date(),
-      ...data,
-    };
-    this.notifications.push(notification);
-    console.log(`[Notification] ${data.channel} sent to ${data.recipient}`);
-    return notification;
+    // Aquí se integraría el envío real vía AWS SES, Twilio o Firebase
+    console.log(`[Notification] Sending ${data.type} to ${data.userId}...`);
+    return await notificationRepo.create(data);
   }
 
   async list() {
-    return this.notifications;
+    return await notificationRepo.findAll();
   }
 
   async getById(id) {
-    const notification = this.notifications.find((n) => n.id === id);
+    const notification = await notificationRepo.findById(id);
     if (!notification) {
       const err = new Error('Notification not found');
       err.status = 404;
@@ -35,7 +22,7 @@ class NotificationService {
   }
 
   async getTemplates() {
-    return this.templates;
+    return await notificationRepo.getTemplates();
   }
 }
 

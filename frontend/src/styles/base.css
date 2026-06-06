@@ -1,0 +1,164 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  html, body, #app { min-height: 100dvh; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 90% 60% at 0% 0%, rgba(255, 51, 102, 0.06), transparent),
+      radial-gradient(ellipse 80% 50% at 100% 0%, rgba(99, 102, 241, 0.08), transparent),
+      radial-gradient(ellipse 70% 40% at 50% 100%, rgba(167, 139, 250, 0.06), transparent);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .glass-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .glass-card:hover {
+    box-shadow: var(--shadow-hover);
+  }
+
+  .panel-card {
+    padding: var(--padding-panel);
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 rounded-2xl font-semibold transition-all duration-200;
+    background: var(--accent-gradient);
+    color: white;
+    border: none;
+    box-shadow: 0 6px 20px var(--accent-glow);
+  }
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(255, 51, 102, 0.32);
+    filter: brightness(1.04);
+  }
+  .btn-primary:disabled {
+    @apply opacity-50 cursor-not-allowed;
+    filter: grayscale(0.3);
+  }
+
+  .btn-secondary {
+    @apply px-5 py-2.5 rounded-2xl font-semibold text-sm transition-all duration-200;
+    background: white;
+    color: var(--accent-2);
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-card);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: #c7d2fe;
+    box-shadow: var(--shadow-hover);
+    color: var(--accent);
+  }
+
+  .btn-logout {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 9999px;
+    border: 1.5px solid var(--border);
+    background: white;
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  }
+  .btn-logout:hover {
+    color: var(--accent);
+    border-color: #c7d2fe;
+    background: #fafbff;
+    box-shadow: var(--shadow-card);
+  }
+  .btn-logout svg {
+    flex-shrink: 0;
+  }
+
+  .input-field {
+    @apply w-full rounded-xl transition-all duration-200;
+    min-height: 48px;
+    padding: 12px 16px;
+    background: #f1f5f9;
+    border: 1.5px solid #e2e8f0;
+    color: var(--text-primary);
+    font-size: 0.9375rem;
+  }
+  .input-field::placeholder {
+    color: var(--text-muted);
+  }
+  .input-field:focus {
+    outline: none;
+    border-color: var(--accent-2);
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+  }
+  .input-field:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background: #f8fafc;
+  }
+  .input-field.error {
+    border-color: var(--danger);
+    animation: shake 0.4s ease;
+  }
+
+  select.input-field {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 40px;
+  }
+
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold;
+  }
+  .status-badge.active {
+    background: var(--success-bg);
+    color: #047857;
+  }
+  .status-badge.expired {
+    background: var(--danger-bg);
+    color: #b91c1c;
+  }
+  .status-badge.inactive {
+    background: #f1f5f9;
+    color: var(--text-muted);
+  }
+
+  .text-muted { color: var(--text-muted); }
+  .text-secondary { color: var(--text-secondary); }
+  .text-accent { color: var(--accent); }
+  .text-success { color: var(--success); }
+  .text-danger { color: var(--danger); }
+  .text-warning { color: var(--warning); }
+
+  .gradient-text {
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}

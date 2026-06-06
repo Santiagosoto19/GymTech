@@ -1,23 +1,16 @@
-class ReportService {
-  constructor() {
-    this.reports = [
-      { id: 'rep-1', type: 'attendance', title: 'Monthly Attendance', generatedAt: new Date() },
-      { id: 'rep-2', type: 'revenue', title: 'Quarterly Revenue', generatedAt: new Date() },
-    ];
-  }
+const reportingRepo = require('../infrastructure/reportingRepository');
 
+class ReportService {
   async list() {
-    return this.reports;
+    return await reportingRepo.findAllReports();
   }
 
   async create(data) {
-    const report = { id: `rep-${Date.now()}`, generatedAt: new Date(), ...data };
-    this.reports.push(report);
-    return report;
+    return await reportingRepo.createReport(data);
   }
 
   async getById(id) {
-    const report = this.reports.find((r) => r.id === id);
+    const report = await reportingRepo.findReportById(id);
     if (!report) {
       const err = new Error('Report not found');
       err.status = 404;
@@ -27,11 +20,12 @@ class ReportService {
   }
 
   async getDashboard() {
+    const stats = await reportingRepo.getDashboardStats();
     return {
-      totalUsers: 150,
-      activeMemberships: 120,
-      todayAttendance: 45,
-      revenueThisMonth: 3499.50,
+      totalUsers: stats.total_users || 0,
+      activeMemberships: stats.active_memberships || 0,
+      todayAttendance: stats.today_attendance || 0,
+      revenueThisMonth: 3499.50, // This would be another SQL sum query
     };
   }
 }
