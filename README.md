@@ -21,7 +21,6 @@ Este proyecto sigue el patrón de arquitectura de microservicios con las siguien
 | Activity         | 3003             | 3003                 | Gestión de actividades/gimnasio     |
 | Reporting        | 3004             | 3004                 | Reportes y analytics                |
 | Notification     | 3005             | 3005                 | Notificaciones (email, push, SMS)   |
-| Frontend (PWA)   | 8087             | 8087                 | Interfaz web progresiva             |
 
 ## Bases de Datos
 
@@ -58,20 +57,6 @@ gymtech/
 │       ├── config/
 │       ├── routes/                 # Proxy/rutas hacia microservicios
 │       └── middlewares/            # Error handler, rate limiter, auth
-│
-├── frontend/                       # PWA (Progressive Web App)
-│   ├── Dockerfile
-│   ├── package.json
-│   ├── .env.example
-│   ├── src/
-│   │   └── server.js               # Servidor Express estático
-│   └── public/
-│       ├── index.html              # App shell
-│       ├── manifest.json           # Configuración PWA
-│       ├── sw.js                   # Service Worker (cache offline)
-│       ├── css/
-│       ├── js/
-│       └── icons/
 │
 ├── services/                       # Microservicios
 │   ├── auth-service/
@@ -121,7 +106,6 @@ El flag `--build` fuerza la reconstrucción de las imágenes. En desarrollo, los
 - Activity Service: http://localhost:3003/health
 - Reporting Service: http://localhost:3004/health
 - Notification Service: http://localhost:3005/health
-- Frontend PWA: http://localhost:8087
 
 ### 4. Detener los servicios
 
@@ -134,13 +118,6 @@ Para eliminar también los volúmenes de base de datos:
 ```bash
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml down -v
 ```
-
-### 5. Instalar la PWA
-
-Abre `http://localhost:8087` en Chrome/Edge. En la barra de direcciones aparecerá el icono de instalación (dispositivo o escritorio). Una vez instalada:
-- Funciona **offline** gracias al Service Worker.
-- Cachea la app shell (`index.html`, CSS, JS, iconos).
-- Peticiones a la API pasan por el Gateway y se cachean dinámicamente cuando hay conexión.
 
 ## Desarrollo Individual de un Servicio
 
@@ -155,15 +132,6 @@ npm run dev
 
 Asegúrate de tener la base de datos correspondiente corriendo (puedes levantar solo `auth-db` desde Docker Compose).
 
-Para trabajar solo en el frontend:
-
-```bash
-cd frontend
-cp .env.example .env
-npm install
-npm run dev
-```
-
 ## Convenciones
 
 - Cada servicio expone un endpoint `/health` para health checks.
@@ -173,7 +141,6 @@ npm run dev
   - `/activities/*` -> activity-service
   - `/reports/*` -> reporting-service
   - `/notifications/*` -> notification-service
-- El frontend PWA se comunica con el backend exclusivamente a través del Gateway (`http://localhost:3000`).
 - Las respuestas siguen el formato definido en `shared/helpers/responseHelper.js`.
 - Los errores son manejados centralmente por el middleware `errorHandler`.
 
