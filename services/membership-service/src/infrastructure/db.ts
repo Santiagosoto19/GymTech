@@ -36,9 +36,18 @@ export async function initSchema(): Promise<void> {
       price DECIMAL(10, 2) NOT NULL,
       duration_days INTEGER NOT NULL,
       max_occupancy INTEGER,
+      monthly_entry_limit INTEGER,
       active BOOLEAN NOT NULL DEFAULT TRUE,
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
+
+    ALTER TABLE membership_plans
+      ADD COLUMN IF NOT EXISTS monthly_entry_limit INTEGER;
+
+    UPDATE membership_plans SET monthly_entry_limit = 12
+      WHERE name = 'Basic Monthly' AND monthly_entry_limit IS NULL;
+    UPDATE membership_plans SET monthly_entry_limit = 20
+      WHERE name = 'Premium Monthly' AND monthly_entry_limit IS NULL;
 
     CREATE TABLE IF NOT EXISTS subscriptions (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -84,11 +93,11 @@ export async function initSchema(): Promise<void> {
   );
   if (planCount.rows[0]?.count === '0') {
     await query(
-      `INSERT INTO membership_plans (name, description, price, duration_days, max_occupancy)
+      `INSERT INTO membership_plans (name, description, price, duration_days, max_occupancy, monthly_entry_limit)
        VALUES
-         ('Basic Monthly', 'Access to gym floor and cardio equipment', 29.99, 30, 100),
-         ('Premium Monthly', 'Full access including classes and sauna', 49.99, 30, 150),
-         ('Annual Pass', 'Best value yearly membership', 299.99, 365, 200)`
+         ('Basic Monthly', 'Access to gym floor and cardio equipment', 29.99, 30, 100, 12),
+         ('Premium Monthly', 'Full access including classes and sauna', 49.99, 30, 150, 20),
+         ('Annual Pass', 'Best value yearly membership', 299.99, 365, 200, NULL)`
     );
     console.log('[membership-service] Default membership plans seeded');
   }
