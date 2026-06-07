@@ -32,6 +32,7 @@ Este proyecto implementa una **arquitectura de microservicios** para la platafor
 | **Activity Service** | Controla actividades del gimnasio, horarios y reservas. | 3003 |
 | **Reporting Service** | Genera reportes, métricas y dashboards. | 3004 |
 | **Notification Service** | Envía notificaciones por email, push o SMS. | 3005 |
+| **Frontend (PWA)** | Interfaz web progresiva. Funciona offline. Se comunica con el Gateway. | 8087 |
 
 ### Patrón Database-per-Service
 Cada microservicio tiene su propia instancia de PostgreSQL. Esto garantiza:
@@ -67,6 +68,20 @@ gymtech/
 │           ├── errorHandler.js     # Captura errores y responde al cliente
 │           ├── rateLimiter.js      # Limita peticiones por IP
 │           └── authMiddleware.js   # Verifica que venga un token JWT
+│
+├── frontend/                       # PWA (Progressive Web App)
+│   ├── Dockerfile                  # Imagen Nginx/Node del frontend
+│   ├── package.json                # Dependencias del frontend
+│   ├── .env.example                # Variables del frontend (plantilla)
+│   ├── src/
+│   │   └── server.js               # Servidor Express que sirve public/
+│   └── public/                     # Assets estáticos de la PWA
+│       ├── index.html              # App shell (single-page)
+│       ├── manifest.json           # Metadatos de la PWA
+│       ├── sw.js                   # Service Worker: cache offline
+│       ├── css/style.css           # Estilos
+│       ├── js/app.js               # Lógica cliente: registro SW, llamadas API
+│       └── icons/                  # Iconos para instalación
 │
 ├── services/                       # Carpeta contenedora de microservicios
 │   ├── auth-service/
@@ -209,7 +224,7 @@ Docker fusiona ambos archivos, dando prioridad a las configuraciones de `docker-
 1. `FROM node:20-alpine`: usa una imagen base ligera de Node.js 20 basada en Alpine Linux (~40MB en vez de ~900MB de la imagen completa).
 2. `WORKDIR /app`: crea y establece el directorio de trabajo dentro del contenedor.
 3. `COPY package*.json ./`: copia los archivos de dependencias.
-4. `RUN npm install --production`: instala solo las dependencias de producción (no `nodemon`, no devDependencies).
+4. `RUN npm install`: instala todas las dependencias (incluido `nodemon` para desarrollo).
 5. `COPY . .`: copia todo el código fuente restante.
 6. `EXPOSE 3000`: documenta que el contenedor escuchará en el puerto 3000.
 7. `CMD ["npm", "start"]`: comando que se ejecuta al arrancar el contenedor.
@@ -559,12 +574,13 @@ router.get('/', validate(paginationSchema), controller.list);
 
 ## Flujo de una Petición
 
-Veamos paso a paso qué ocurre cuando un cliente (por ejemplo, una app móvil) quiere **consultar las actividades del gimnasio**:
+Veamos paso a paso qué ocurre cuando un cliente (por ejemplo, una app móvil o el navegador con la PWA) quiere **consultar las actividades del gimnasio**:
 
 ```
-1. CLIENTE
+1. CLIENTE (PWA)
    Hace: GET http://localhost:3000/activities
    Headers: Authorization: Bearer <token>
+   Origen: http://localhost:8087 (la PWA)
 
 2. API GATEWAY (puerto 3000)
    a. Recibe la petición en Express.
@@ -589,8 +605,9 @@ Veamos paso a paso qué ocurre cuando un cliente (por ejemplo, una app móvil) q
    a. Recibe la respuesta del Activity Service.
    b. La reenvía al cliente sin modificarla.
 
-5. CLIENTE
+5. CLIENTE (PWA)
    Recibe: { "success": true, "data": [ { id: "act-1", name: "Yoga" }, ... ] }
+   El Service Worker guarda la respuesta en cache para uso offline.
 ```
 
 Si en cualquier punto ocurre un error:
@@ -633,7 +650,24 @@ Los archivos en `models/` son **clases JavaScript mock**. No conectan a PostgreS
 
 ---
 
-## Desarrollo y Debug
+## Frontend PWA
+
+### Arquitectura de la PWA
+
+La carpeta `frontend/` contiene una **Progressive Web App** que actúa como cliente único del sistema GymTech.
+
+**Características**:
+- **App Shell**: `index.html` con CSS y JS propios. Se carga una sola vez.
+- **Service Worker** (`public/sw.js`): intercepta peticiones `fetch` y usa una estrategia de cache. Si el usuario está offline, devuelve los assets cacheados o la página de inicio.
+- **Manifest** (`public/manifest.json`): metadatos necesarios para que el navegador ofrezca "Agregar a pantalla de inicio".
+- **Consumo de API**: todas las llamadas van al Gateway (`http://localhost:3000`). El frontend no contacta directamente a los microservicios.
+
+**Estrategia de cache (Service Worker)**:
+- Al instalar, precarga el shell (HTML, CSS, JS, manifest, icono) en `CacheStorage`.
+- En `fetch`, primero busca en cache (`Cache-First`). Si no está, hace la petición de red y guarda la respuesta.
+- Si la red falla y no hay cache, devuelve la página raíz (fallback para navegación offline).
+
+**CORS**: El Gateway tiene `cors()` habilitado para permitir peticiones desde `localhost:8087` (y eventualmente el dominio productivo).
 
 ### Levantar todo el sistema
 ```bash
@@ -645,6 +679,7 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 # 3. Ver logs en tiempo real
 docker-compose logs -f gateway
+docker-compose logs -f frontend
 ```
 
 ### Levantar un solo servicio
@@ -664,6 +699,7 @@ En desarrollo, `docker-compose.dev.yml` monta las carpetas `src/` como volúmene
 curl http://localhost:3000/health      # Gateway
 curl http://localhost:3001/health      # Auth Service
 curl http://localhost:3002/health      # Membership Service
+curl http://localhost:8087/health      # Frontend PWA
 # ... etc
 ```
 
@@ -681,6 +717,11 @@ curl http://localhost:3000/activities
 curl http://localhost:3000/reports/dashboard
 ```
 
+### Instalar la PWA
+1. Abre `http://localhost:8087` en Chrome, Edge o Safari.
+2. En la barra de direcciones aparecerá el icono de instalación (o usa el menú "Agregar a pantalla de inicio" en móvil).
+3. La app se instala como aplicación nativa y funciona offline gracias al Service Worker.
+
 ---
 
 ## Próximos Pasos Sugeridos
@@ -691,3 +732,4 @@ curl http://localhost:3000/reports/dashboard
 4. **Tests**: añadir Jest + Supertest para tests unitarios y de integración en cada servicio.
 5. **CI/CD**: crear un pipeline que construya las imágenes Docker y las publique en un registry.
 6. **Observabilidad**: integrar el logger de `shared/logger` en todos los servicios y añadir métricas Prometheus.
+7. **PWA avanzada**: agregar notificaciones push (usar Notification Service + Web Push API), sincronización en background y cache dinámico de rutas frecuentes.
