@@ -33,12 +33,26 @@ export class ActivityController {
 
   createClass = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { name, description, instructor, capacity } = req.body;
+      const { name, description, instructor, capacity, startTime, endTime, room } = req.body;
+      if (!startTime || !endTime) {
+        throw AppError.badRequest('startTime and endTime are required');
+      }
+      const start = new Date(startTime);
+      const end = new Date(endTime);
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+        throw AppError.badRequest('Invalid startTime or endTime');
+      }
+      if (end <= start) {
+        throw AppError.badRequest('endTime must be after startTime');
+      }
       const gymClass = await this.classSchedulingService.createClass({
         name,
         description,
         instructor,
         capacity: Number(capacity),
+        startTime,
+        endTime,
+        room,
       });
       res.status(201).json({ success: true, data: gymClass.toJSON() });
     } catch (error) {

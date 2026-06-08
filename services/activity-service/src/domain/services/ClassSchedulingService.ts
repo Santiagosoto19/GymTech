@@ -19,9 +19,24 @@ export class ClassSchedulingService {
     description?: string;
     instructor: string;
     capacity: number;
+    startTime?: string;
+    endTime?: string;
+    room?: string;
   }): Promise<GymClass> {
     const gymClass = new GymClass(data);
-    return this.gymClassRepository.create(gymClass);
+    const created = await this.gymClassRepository.create(gymClass);
+
+    if (data.startTime && data.endTime) {
+      const schedule = new Schedule({
+        classId: created.id!,
+        startTime: new Date(data.startTime),
+        endTime: new Date(data.endTime),
+        room: data.room || 'Sala principal',
+      });
+      await this.scheduleRepository.create(schedule);
+    }
+
+    return created;
   }
 
   async reserveClass(classId: string, userId: string): Promise<{ id: string; classId: string; userId: string; createdAt: Date }> {
