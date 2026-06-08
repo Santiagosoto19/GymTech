@@ -10,6 +10,14 @@ RUN npm ci
 COPY services/membership-service/ ./
 RUN npm run build
 
+FROM node:20-alpine AS dev
+WORKDIR /app
+COPY services/membership-service/package*.json ./
+RUN npm ci
+COPY services/membership-service/ ./
+EXPOSE 3002
+CMD ["npm", "run", "dev"]
+
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production

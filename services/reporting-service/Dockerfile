@@ -10,6 +10,14 @@ RUN npm ci
 COPY services/reporting-service/ ./
 RUN npm run build
 
+FROM node:20-alpine AS dev
+WORKDIR /app
+COPY services/reporting-service/package*.json ./
+RUN npm ci
+COPY services/reporting-service/ ./
+EXPOSE 3004
+CMD ["npm", "run", "dev"]
+
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production

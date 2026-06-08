@@ -1,84 +1,92 @@
 version: '3.8'
 
+# Desarrollo: monta el código fuente en vivo y usa Vite/tsx watch.
+# Levantar con:  docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+# App:          http://localhost:5173
+
 services:
   gateway:
     build:
       context: ./gateway
       dockerfile: Dockerfile
+      target: dev
     volumes:
       - ./gateway/src:/app/src
-      - ./shared:/app/shared
-      - ./shared:/shared
     environment:
-      - NODE_ENV=development
+      NODE_ENV: development
     command: npm run dev
 
   auth-service:
     build:
-      context: ./services/auth-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+      target: dev
     volumes:
       - ./services/auth-service/src:/app/src
       - ./shared:/app/shared
       - ./shared:/shared
     environment:
-      - NODE_ENV=development
+      NODE_ENV: development
     command: npm run dev
     ports:
       - "3001:3001"
 
   membership-service:
     build:
-      context: ./services/membership-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/membership-service/Dockerfile
+      target: dev
     volumes:
       - ./services/membership-service/src:/app/src
       - ./shared:/app/shared
       - ./shared:/shared
     environment:
-      - NODE_ENV=development
+      NODE_ENV: development
     command: npm run dev
     ports:
       - "3002:3002"
 
   activity-service:
     build:
-      context: ./services/activity-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/activity-service/Dockerfile
+      target: dev
     volumes:
       - ./services/activity-service/src:/app/src
       - ./shared:/app/shared
       - ./shared:/shared
     environment:
-      - NODE_ENV=development
+      NODE_ENV: development
     command: npm run dev
     ports:
       - "3003:3003"
 
   reporting-service:
     build:
-      context: ./services/reporting-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/reporting-service/Dockerfile
+      target: dev
     volumes:
       - ./services/reporting-service/src:/app/src
       - ./shared:/app/shared
       - ./shared:/shared
     environment:
-      - NODE_ENV=development
+      NODE_ENV: development
     command: npm run dev
     ports:
       - "3004:3004"
 
   notification-service:
     build:
-      context: ./services/notification-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+      target: dev
     volumes:
       - ./services/notification-service/src:/app/src
       - ./shared:/app/shared
       - ./shared:/shared
     environment:
-      - NODE_ENV=development
+      NODE_ENV: development
     command: npm run dev
     ports:
       - "3005:3005"
@@ -86,16 +94,20 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts
     environment:
-      - NODE_ENV=development
-      - API_GATEWAY_URL=http://localhost:3000
-    command: npm run dev
+      NODE_ENV: development
+      VITE_API_PROXY: http://gateway:8080
+    command: npm run dev -- --host 0.0.0.0 --port 5173
     ports:
-      - "8087:80"
+      - "5173:5173"
+    depends_on:
+      - gateway
 
   auth-db:
     ports:
