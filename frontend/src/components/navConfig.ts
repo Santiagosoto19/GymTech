@@ -47,6 +47,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { href: '#/client/home', label: 'Inicio', icon: 'home' },
     { href: '#/client', label: 'Membresías', icon: 'membership' },
     { href: '#/client/classes', label: 'Actividades', icon: 'activities' },
+    { href: '#/client/routine', label: 'Mi rutina', icon: 'routines' },
     { href: '#/client/profile', label: 'Perfil', icon: 'profile' },
     { href: '#/client/settings', label: 'Ajustes', icon: 'settings' },
   ],

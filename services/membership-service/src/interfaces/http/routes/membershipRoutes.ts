@@ -15,6 +15,7 @@ export function createMembershipRoutes(controller: MembershipController): Router
   router.get('/subscriptions/validate/:userId', controller.validateSubscription);
 
   router.get('/occupancy/live', controller.getLiveOccupancy);
+  router.get('/attendance/stats/:userId', controller.getAttendanceStats);
   router.post('/attendance', staff, controller.recordAttendance);
 
   router.post('/payments', staff, controller.recordPayment);

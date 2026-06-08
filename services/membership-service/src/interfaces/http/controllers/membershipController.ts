@@ -17,7 +17,8 @@ export class MembershipController {
   private readonly paymentRepo = new PaymentRepository();
   private readonly validationService = new MembershipValidationService(
     this.planRepo,
-    this.subscriptionRepo
+    this.subscriptionRepo,
+    this.attendanceRepo
   );
   private readonly renewalService = new SubscriptionRenewalService(
     this.subscriptionRepo,
@@ -35,13 +36,14 @@ export class MembershipController {
 
   createPlan = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { name, description, price, durationDays, maxOccupancy } = req.body;
+      const { name, description, price, durationDays, maxOccupancy, monthlyEntryLimit } = req.body;
       const plan = new Membership({
         name,
         description,
         price: parseFloat(price),
         durationDays: parseInt(durationDays, 10),
         maxOccupancy: maxOccupancy ? parseInt(maxOccupancy, 10) : undefined,
+        monthlyEntryLimit: monthlyEntryLimit ? parseInt(monthlyEntryLimit, 10) : undefined,
       });
       const saved = await this.planRepo.save(plan);
       res.status(201).json({ success: true, data: saved.toJSON() });
@@ -87,6 +89,29 @@ export class MembershipController {
     }
   };
 
+  private async buildAttendanceStats(userId: string) {
+    const monthlyCheckIns = await this.attendanceRepo.countMonthlyCheckIns(userId);
+    const entriesUsed = await this.attendanceRepo.countMonthlyEntriesUsed(userId);
+    const isCheckedIn = await this.attendanceRepo.hasOpenSession(userId);
+    const subscription = await this.subscriptionRepo.findActiveByUserId(userId);
+    let limit: number | null = null;
+    if (subscription) {
+      const plan = await this.planRepo.findById(subscription.planId);
+      limit = plan?.monthlyEntryLimit ?? null;
+    }
+    const remainingEntries = limit !== null ? Math.max(0, limit - entriesUsed) : null;
+    return { monthlyCheckIns, monthlyEntryLimit: limit, remainingEntries, isCheckedIn };
+  }
+
+  getAttendanceStats = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const stats = await this.buildAttendanceStats(req.params.userId);
+      res.status(200).json({ success: true, data: stats });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   getLiveOccupancy = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const current = await this.attendanceRepo.countLiveOccupancy();
@@ -111,13 +136,10 @@ export class MembershipController {
       const existing = await this.attendanceRepo.findByIdempotencyKey(idempotencyKey);
       if (existing) {
         const occupancy = await this.attendanceRepo.countLiveOccupancy();
+        const stats = await this.buildAttendanceStats(existing.userId);
         res.status(200).json({
           success: true,
-          data: {
-            attendance: existing.toJSON(),
-            occupancy,
-            duplicate: true,
-          },
+          data: { attendance: existing.toJSON(), occupancy, stats, duplicate: true },
         });
         return;
       }
@@ -157,14 +179,11 @@ export class MembershipController {
 
       const saved = await this.attendanceRepo.save(attendance);
       const occupancy = await this.attendanceRepo.countLiveOccupancy();
+      const stats = await this.buildAttendanceStats(userId);
 
       res.status(201).json({
         success: true,
-        data: {
-          attendance: saved.toJSON(),
-          occupancy,
-          duplicate: false,
-        },
+        data: { attendance: saved.toJSON(), occupancy, stats, duplicate: false },
       });
     } catch (error) {
       next(error);

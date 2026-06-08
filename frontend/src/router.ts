@@ -17,6 +17,7 @@ import { ClientHome } from './views/client/home';
 import { ClientClasses } from './views/client/classes';
 import { ClientProfile } from './views/client/profile';
 import { ClientSettings } from './views/client/settings';
+import { ClientRoutine } from './views/client/routine';
 
 type RouteHandler = () => HTMLElement;
 
@@ -40,6 +41,7 @@ const protectedRoutes: Record<string, { handler: RouteHandler; roles: string[] }
   '/client': { handler: ClientCard, roles: ['client'] },
   '/client/home': { handler: ClientHome, roles: ['client'] },
   '/client/classes': { handler: ClientClasses, roles: ['client'] },
+  '/client/routine': { handler: ClientRoutine, roles: ['client'] },
   '/client/profile': { handler: ClientProfile, roles: ['client'] },
   '/client/settings': { handler: ClientSettings, roles: ['client'] },
   '/client/notifications': { handler: ClientSettings, roles: ['client'] },
@@ -70,7 +72,7 @@ export function navigate(): void {
     return;
   }
 
-  if (path === '/client/health' || path === '/client/routine') {
+  if (path === '/client/health') {
     window.location.hash = '/client/home';
     return;
   }

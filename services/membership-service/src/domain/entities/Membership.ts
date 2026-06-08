@@ -5,6 +5,7 @@ export interface MembershipProps {
   price: number;
   durationDays: number;
   maxOccupancy?: number;
+  monthlyEntryLimit?: number;
   active?: boolean;
   createdAt?: Date;
 }
@@ -16,6 +17,7 @@ export class Membership {
   price: number;
   durationDays: number;
   maxOccupancy?: number;
+  monthlyEntryLimit?: number;
   active: boolean;
   readonly createdAt?: Date;
 
@@ -36,6 +38,7 @@ export class Membership {
     this.price = props.price;
     this.durationDays = props.durationDays;
     this.maxOccupancy = props.maxOccupancy;
+    this.monthlyEntryLimit = props.monthlyEntryLimit;
     this.active = props.active ?? true;
     this.createdAt = props.createdAt;
   }
@@ -48,6 +51,7 @@ export class Membership {
       price: this.price,
       durationDays: this.durationDays,
       maxOccupancy: this.maxOccupancy ?? null,
+      monthlyEntryLimit: this.monthlyEntryLimit ?? null,
       active: this.active,
       createdAt: this.createdAt,
     };

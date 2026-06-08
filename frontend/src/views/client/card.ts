@@ -1,4 +1,5 @@
 import { api } from '../../lib/api';
+import { onAttendanceChange } from '../../lib/dataRefresh';
 import { getUser } from '../../state/auth';
 import { ClientLayout } from '../../components/ClientLayout';
 import { UserMenu } from '../../components/UserMenu';
@@ -37,6 +38,16 @@ export function ClientCard(): HTMLElement {
           <p id="client-doc">—</p>
         </div>
         <span class="pill-badge" id="plan-name">—</span>
+        <div class="membership-panel__stats">
+          <div class="membership-panel__stat">
+            <span class="membership-panel__stat-value" id="card-visits">—</span>
+            <span class="membership-panel__stat-label">Visitas este mes</span>
+          </div>
+          <div class="membership-panel__stat">
+            <span class="membership-panel__stat-value" id="card-entries">—</span>
+            <span class="membership-panel__stat-label">Entradas restantes</span>
+          </div>
+        </div>
         <div id="progress-ring-slot"></div>
         <p id="expiry-alert" class="membership-panel__alert hidden"></p>
       </div>
@@ -46,40 +57,63 @@ export function ClientCard(): HTMLElement {
   panel.querySelector('#progress-ring-slot')!.appendChild(progressRing);
   content.appendChild(panel);
 
+  async function loadData(): Promise<void> {
+    if (!user) return;
+    const [v, stats] = await Promise.all([
+      api.membership.validateSubscription(user.id),
+      api.membership.getAttendanceStats(user.id).catch(() => null),
+    ]);
+    const plans = await api.membership.getPlans();
+    const plan = plans.find((p) => p.id === v.subscription.planId);
+    (panel.querySelector('#plan-name') as HTMLElement).textContent = plan?.name || 'Membresía';
+
+    if (stats) {
+      (panel.querySelector('#card-visits') as HTMLElement).textContent = String(stats.monthlyCheckIns);
+      (panel.querySelector('#card-entries') as HTMLElement).textContent =
+        stats.remainingEntries !== null ? String(stats.remainingEntries) : '∞';
+    }
+
+    const end = new Date(v.subscription.endDate);
+    const start = new Date(v.subscription.startDate);
+    const total = end.getTime() - start.getTime();
+    const left = Math.max(0, end.getTime() - Date.now());
+    const days = Math.ceil(left / 86400000);
+    const pct = total > 0 ? Math.min(100, Math.round((left / total) * 100)) : 0;
+    setProgress(pct, days);
+
+    const alert = panel.querySelector('#expiry-alert') as HTMLElement;
+    if (days <= 7 && days > 0) {
+      alert.textContent = `Tu membresía vence en ${days} día${days > 1 ? 's' : ''}. Renueva pronto.`;
+      alert.classList.remove('hidden');
+    } else {
+      alert.classList.add('hidden');
+    }
+  }
+
   if (user) {
     panel.querySelector('#user-menu-slot')!.appendChild(
       UserMenu(user.firstName || '', user.lastName || '')
     );
-
     (panel.querySelector('#client-name') as HTMLElement).textContent =
       `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Cliente';
     (panel.querySelector('#client-doc') as HTMLElement).textContent = user.documentNumber;
     (panel.querySelector('#qr-img') as HTMLImageElement).src =
       `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(user.documentNumber)}`;
 
-    api.membership.validateSubscription(user.id).then(async (v) => {
-      const plans = await api.membership.getPlans();
-      const plan = plans.find((p) => p.id === v.subscription.planId);
-      (panel.querySelector('#plan-name') as HTMLElement).textContent = plan?.name || 'Membresía';
-
-      const end = new Date(v.subscription.endDate);
-      const start = new Date(v.subscription.startDate);
-      const total = end.getTime() - start.getTime();
-      const left = Math.max(0, end.getTime() - Date.now());
-      const days = Math.ceil(left / 86400000);
-      const pct = total > 0 ? Math.min(100, Math.round((left / total) * 100)) : 0;
-
-      setProgress(pct, days);
-
-      if (days <= 7 && days > 0) {
-        const alert = panel.querySelector('#expiry-alert') as HTMLElement;
-        alert.textContent = `Tu membresía vence en ${days} día${days > 1 ? 's' : ''}. Renueva pronto.`;
-        alert.classList.remove('hidden');
-      }
-    }).catch(() => {
+    loadData().catch(() => {
       (panel.querySelector('#plan-name') as HTMLElement).textContent = 'Sin membresía activa';
       setProgress(0, 0);
     });
+
+    const unsub = onAttendanceChange((userId) => {
+      if (userId === user.id) loadData().catch(() => {});
+    });
+    const onVisible = () => { if (document.visibilityState === 'visible') loadData().catch(() => {}); };
+    document.addEventListener('visibilitychange', onVisible);
+    (content as HTMLElement & { _cleanup?: () => void })._cleanup = () => {
+      unsub();
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }
 
   return ClientLayout(content, { hideTopBar: true });

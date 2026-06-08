@@ -49,6 +49,14 @@ export interface MembershipPlan {
   price: number;
   durationDays: number;
   maxOccupancy?: number;
+  monthlyEntryLimit?: number | null;
+}
+
+export interface AttendanceStats {
+  monthlyCheckIns: number;
+  monthlyEntryLimit: number | null;
+  remainingEntries: number | null;
+  isCheckedIn: boolean;
 }
 
 export interface Subscription {
@@ -133,6 +141,10 @@ export interface ClientLookup {
   subscriptionStatus: 'active' | 'expired' | 'suspended' | 'canceled';
   membershipName?: string;
   daysRemaining?: number;
+  monthlyCheckIns?: number;
+  monthlyEntryLimit?: number | null;
+  remainingEntries?: number | null;
+  isCheckedIn?: boolean;
 }
 
 export const api = {
@@ -174,6 +186,8 @@ export const api = {
     validateSubscription: (userId: string) =>
       request<{ valid: boolean; subscription: Subscription }>(`/membership/subscriptions/validate/${userId}`),
     getOccupancy: () => request<{ current: number; max: number }>('/membership/occupancy/live'),
+    getAttendanceStats: (userId: string) =>
+      request<AttendanceStats>(`/membership/attendance/stats/${userId}`),
     registerAttendance: (userId: string, type: 'check_in' | 'check_out', idempotencyKey: string) =>
       request('/membership/attendance', {
         method: 'POST',
@@ -253,6 +267,21 @@ export async function lookupClient(doc: string): Promise<ClientLookup> {
 
   if (user.status === 'inactive') subscriptionStatus = 'canceled';
 
+  let monthlyCheckIns: number | undefined;
+  let monthlyEntryLimit: number | null | undefined;
+  let remainingEntries: number | null | undefined;
+  let isCheckedIn: boolean | undefined;
+
+  try {
+    const stats = await api.membership.getAttendanceStats(user.id);
+    monthlyCheckIns = stats.monthlyCheckIns;
+    monthlyEntryLimit = stats.monthlyEntryLimit;
+    remainingEntries = stats.remainingEntries;
+    isCheckedIn = stats.isCheckedIn;
+  } catch {
+    // Sin stats si no hay suscripción activa
+  }
+
   return {
     userId: user.id,
     firstName: user.firstName || 'Cliente',
@@ -261,6 +290,10 @@ export async function lookupClient(doc: string): Promise<ClientLookup> {
     subscriptionStatus,
     membershipName,
     daysRemaining,
+    monthlyCheckIns,
+    monthlyEntryLimit,
+    remainingEntries,
+    isCheckedIn,
   };
 }
 

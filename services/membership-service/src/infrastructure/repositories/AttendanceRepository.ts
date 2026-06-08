@@ -67,4 +67,22 @@ export class AttendanceRepository implements IAttendanceRepository {
     `, [userId]);
     return rows[0]?.event_type === 'check_in';
   }
+
+  async countMonthlyCheckIns(userId: string): Promise<number> {
+    const { rows } = await query<{ count: string }>(`
+      SELECT COUNT(*)::text AS count FROM attendance_records
+      WHERE user_id = $1 AND event_type = 'check_in'
+        AND created_at >= date_trunc('month', NOW())
+    `, [userId]);
+    return parseInt(rows[0]?.count ?? '0', 10);
+  }
+
+  async countMonthlyEntriesUsed(userId: string): Promise<number> {
+    const { rows } = await query<{ count: string }>(`
+      SELECT COUNT(*)::text AS count FROM attendance_records
+      WHERE user_id = $1 AND event_type IN ('check_in', 'check_out')
+        AND created_at >= date_trunc('month', NOW())
+    `, [userId]);
+    return parseInt(rows[0]?.count ?? '0', 10);
+  }
 }

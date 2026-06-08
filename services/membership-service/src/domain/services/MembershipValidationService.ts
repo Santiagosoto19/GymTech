@@ -1,5 +1,6 @@
 import { IMembershipPlanRepository } from '../repositories/IMembershipPlanRepository';
 import { ISubscriptionRepository } from '../repositories/ISubscriptionRepository';
+import { IAttendanceRepository } from '../repositories/IAttendanceRepository';
 import { AppError } from '../errors/AppError';
 import { Membership } from '../entities/Membership';
 import { Subscription } from '../entities/Subscription';
@@ -7,7 +8,8 @@ import { Subscription } from '../entities/Subscription';
 export class MembershipValidationService {
   constructor(
     private readonly planRepository: IMembershipPlanRepository,
-    private readonly subscriptionRepository: ISubscriptionRepository
+    private readonly subscriptionRepository: ISubscriptionRepository,
+    private readonly attendanceRepository?: IAttendanceRepository
   ) {}
 
   async getPlanOrThrow(planId: string): Promise<Membership> {
@@ -38,6 +40,13 @@ export class MembershipValidationService {
 
     if (plan.maxOccupancy !== undefined && currentOccupancy >= plan.maxOccupancy) {
       throw AppError.forbidden('Gym has reached maximum occupancy');
+    }
+
+    if (plan.monthlyEntryLimit !== undefined && this.attendanceRepository) {
+      const used = await this.attendanceRepository.countMonthlyEntriesUsed(userId);
+      if (used >= plan.monthlyEntryLimit) {
+        throw AppError.forbidden('Monthly entry limit reached');
+      }
     }
 
     return subscription;

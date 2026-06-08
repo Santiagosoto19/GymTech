@@ -5,4 +5,6 @@ export interface IAttendanceRepository {
   save(attendance: Attendance): Promise<Attendance>;
   countLiveOccupancy(): Promise<number>;
   hasOpenSession(userId: string): Promise<boolean>;
+  countMonthlyCheckIns(userId: string): Promise<number>;
+  countMonthlyEntriesUsed(userId: string): Promise<number>;
 }

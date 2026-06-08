@@ -9,6 +9,7 @@ interface PlanRow {
   price: string;
   duration_days: number;
   max_occupancy: number | null;
+  monthly_entry_limit: number | null;
   active: boolean;
   created_at: Date;
 }
@@ -21,6 +22,7 @@ function mapRow(row: PlanRow): Membership {
     price: parseFloat(row.price),
     durationDays: row.duration_days,
     maxOccupancy: row.max_occupancy ?? undefined,
+    monthlyEntryLimit: row.monthly_entry_limit ?? undefined,
     active: row.active,
     createdAt: row.created_at,
   });
@@ -44,8 +46,8 @@ export class MembershipPlanRepository implements IMembershipPlanRepository {
 
   async save(plan: Membership): Promise<Membership> {
     const { rows } = await query<PlanRow>(
-      `INSERT INTO membership_plans (name, description, price, duration_days, max_occupancy, active)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO membership_plans (name, description, price, duration_days, max_occupancy, monthly_entry_limit, active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [
         plan.name,
@@ -53,6 +55,7 @@ export class MembershipPlanRepository implements IMembershipPlanRepository {
         plan.price,
         plan.durationDays,
         plan.maxOccupancy ?? null,
+        plan.monthlyEntryLimit ?? null,
         plan.active,
       ]
     );
