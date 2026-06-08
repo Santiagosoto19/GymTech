@@ -1,4 +1,5 @@
 import { getUser } from '../state/auth';
+import { ConnectionBanner } from './ConnectionBanner';
 import { NetworkBadge } from './NetworkBadge';
 import { LogoutButton } from './LogoutButton';
 import {
@@ -112,6 +113,7 @@ export function SidebarLayout(
   shell.appendChild(sidebar);
   shell.appendChild(main);
   shell.appendChild(overlay);
+  shell.appendChild(ConnectionBanner());
 
   function openSidebar(): void {
     sidebar.classList.add('app-sidebar--open');

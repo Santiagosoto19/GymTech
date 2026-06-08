@@ -6,6 +6,10 @@ export function isOnline(): boolean {
   return navigator.onLine;
 }
 
+export function getConnectionLabel(): string {
+  return isOnline() ? 'En línea' : 'Sin conexión';
+}
+
 export function onNetworkChange(cb: NetworkListener): () => void {
   listeners.add(cb);
   return () => listeners.delete(cb);

@@ -1,5 +1,5 @@
 import { clearSession } from '../state/auth';
-import { isOnline, onNetworkChange } from '../lib/network';
+import { getConnectionLabel, isOnline, onNetworkChange } from '../lib/network';
 
 export function UserMenu(firstName: string, lastName: string): HTMLElement {
   const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || '?';
@@ -12,7 +12,7 @@ export function UserMenu(firstName: string, lastName: string): HTMLElement {
     const status = wrapper.querySelector('#user-status') as HTMLElement;
     if (!status) return;
     status.className = `user-menu__status ${online ? 'user-menu__status--online' : 'user-menu__status--offline'}`;
-    status.innerHTML = `<span class="user-menu__dot"></span>${online ? 'Online' : 'Offline'}`;
+    status.innerHTML = `<span class="user-menu__dot"></span>${getConnectionLabel()}`;
   }
 
   wrapper.innerHTML = `
@@ -21,7 +21,7 @@ export function UserMenu(firstName: string, lastName: string): HTMLElement {
       <span class="user-menu__info">
         <span class="user-menu__name">${fullName}</span>
         <span class="user-menu__status user-menu__status--online" id="user-status">
-          <span class="user-menu__dot"></span>Online
+          <span class="user-menu__dot"></span>En línea
         </span>
       </span>
       <svg class="user-menu__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">

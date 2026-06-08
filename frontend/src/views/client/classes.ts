@@ -62,7 +62,7 @@ export function ClientClasses(): HTMLElement {
   function renderUpcoming(events: CalendarEvent[], reservedIds: Set<string>): void {
     const now = Date.now();
     const upcoming = events
-      .filter((e) => reservedIds.has(e.classId) && new Date(e.startTime).getTime() >= now)
+      .filter((e) => new Date(e.startTime).getTime() >= now)
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
       .slice(0, 6);
 
@@ -83,7 +83,7 @@ export function ClientClasses(): HTMLElement {
         </div>
         <div class="activities-sidebar__info">
           <strong>${e.title}</strong>
-          <p class="text-xs text-muted">${start.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })} · ${e.room}</p>
+          <p class="text-xs text-muted">${start.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })} · ${e.room}${reservedIds.has(e.classId) ? ' · Reservada' : ''}</p>
         </div>
       `;
       upcomingList.appendChild(item);
@@ -92,24 +92,37 @@ export function ClientClasses(): HTMLElement {
 
   function renderAvailable(
     classes: Awaited<ReturnType<typeof api.activity.getClasses>>,
+    schedules: Awaited<ReturnType<typeof api.activity.getSchedules>>,
     reservedIds: Set<string>
   ): void {
-    const available = classes.filter((c) => !reservedIds.has(c.id));
+    const now = Date.now();
+    const available = schedules
+      .filter((s) => new Date(s.startTime).getTime() >= now)
+      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+      .map((s) => {
+        const cls = classes.find((c) => c.id === s.classId);
+        if (!cls || reservedIds.has(cls.id)) return null;
+        return { schedule: s, cls };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+
     if (!available.length) {
-      availableList.innerHTML = '<p class="text-muted text-sm">Ya reservaste todas las clases disponibles</p>';
+      availableList.innerHTML = '<p class="text-muted text-sm">No hay clases disponibles para reservar</p>';
       return;
     }
 
     availableList.innerHTML = '';
-    available.forEach((c) => {
-      const enrolled = c.enrolledCount ?? 0;
-      const full = enrolled >= c.capacity;
+    available.forEach(({ schedule, cls }) => {
+      const enrolled = cls.enrolledCount ?? 0;
+      const full = enrolled >= cls.capacity;
+      const start = new Date(schedule.startTime);
       const item = document.createElement('div');
       item.className = 'activities-sidebar__item activities-sidebar__item--action';
       item.innerHTML = `
         <div class="activities-sidebar__info flex-1">
-          <strong>${c.name}</strong>
-          <p class="text-xs text-muted">${c.instructor || ''} · ${enrolled}/${c.capacity} cupos</p>
+          <strong>${cls.name}</strong>
+          <p class="text-xs text-muted">${start.toLocaleString('es')} · ${schedule.room}</p>
+          <p class="text-xs text-muted">${cls.instructor || ''} · ${enrolled}/${cls.capacity} cupos</p>
         </div>
         <button type="button" class="btn-primary text-xs px-3 py-1.5 reserve-btn" ${full ? 'disabled' : ''}>
           ${full ? 'Llena' : 'Reservar'}
@@ -118,8 +131,9 @@ export function ClientClasses(): HTMLElement {
       if (!full && user) {
         item.querySelector('.reserve-btn')!.addEventListener('click', async () => {
           try {
-            await api.activity.reserveClass(c.id, user.id);
+            await api.activity.reserveClass(cls.id, user.id);
             showMsg('Cupo reservado exitosamente', 'success');
+            calendar.focusDate(start);
             loadData();
           } catch (err) {
             showMsg((err as { message?: string }).message || 'Error al reservar', 'danger');
@@ -144,7 +158,7 @@ export function ClientClasses(): HTMLElement {
       calendar.setEvents(events);
       calendar.setFilter(activeFilter);
       renderUpcoming(events, reservedIds);
-      renderAvailable(classes, reservedIds);
+      renderAvailable(classes, schedules, reservedIds);
     } catch {
       upcomingList.innerHTML = '<p class="text-muted text-sm">No se pudieron cargar las actividades</p>';
       availableList.innerHTML = '';

@@ -12,6 +12,7 @@ export function AdminMemberships(): HTMLElement {
         <input class="input-field" name="price" type="number" step="0.01" placeholder="Precio" required />
         <input class="input-field" name="durationDays" type="number" placeholder="Duración (días)" required />
         <input class="input-field" name="maxOccupancy" type="number" placeholder="Aforo máximo" />
+        <input class="input-field" name="monthlyEntryLimit" type="number" placeholder="Límite entradas/mes (vacío = ilimitado)" />
         <textarea class="input-field md:col-span-2" name="description" placeholder="Descripción"></textarea>
         <button class="btn-primary md:col-span-2">Crear plan</button>
       </form>
@@ -46,7 +47,8 @@ export function AdminMemberships(): HTMLElement {
       planSelect.appendChild(opt);
       const el = document.createElement('div');
       el.className = 'glass-card panel-card';
-      el.innerHTML = `<strong>${p.name}</strong> · $${p.price} · ${p.durationDays} días`;
+      const limit = p.monthlyEntryLimit != null ? `${p.monthlyEntryLimit} entradas/mes` : 'Ilimitado';
+      el.innerHTML = `<strong>${p.name}</strong> · $${p.price} · ${p.durationDays} días · ${limit}`;
       content.querySelector('#plans-list')!.appendChild(el);
     });
   });

@@ -52,6 +52,7 @@ export function ActivityCalendar(): {
   setEvents: (events: CalendarEvent[]) => void;
   setFilter: (filter: CalendarFilter) => void;
   onSelectDay: (cb: (date: Date, events: CalendarEvent[]) => void) => void;
+  focusDate: (date: Date) => void;
 } {
   let events: CalendarEvent[] = [];
   let filter: CalendarFilter = 'all';
@@ -178,6 +179,12 @@ export function ActivityCalendar(): {
     },
     onSelectDay(cb) {
       onDaySelect = cb;
+    },
+    focusDate(date: Date) {
+      viewYear = date.getFullYear();
+      viewMonth = date.getMonth();
+      selectedDate = date;
+      render();
     },
   };
 }

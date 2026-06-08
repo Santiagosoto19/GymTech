@@ -297,6 +297,14 @@ export async function lookupClient(doc: string): Promise<ClientLookup> {
   };
 }
 
+export function combineDateAndTime(date: string, time: string): string {
+  return new Date(`${date}T${time}`).toISOString();
+}
+
+export function toISOFromLocalDateTime(value: string): string {
+  return new Date(value).toISOString();
+}
+
 export function downloadBase64Report(base64: string, filename: string, mime: string): void {
   const link = document.createElement('a');
   link.href = `data:${mime};base64,${base64}`;

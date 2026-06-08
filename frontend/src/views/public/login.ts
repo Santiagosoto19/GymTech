@@ -1,10 +1,13 @@
 import { api } from '../../lib/api';
 import { setSession, getDefaultRoute } from '../../state/auth';
+import { ConnectionBanner } from '../../components/ConnectionBanner';
 import { NetworkBadge } from '../../components/NetworkBadge';
 
 export function LoginView(): HTMLElement {
   const container = document.createElement('div');
   container.className = 'min-h-dvh flex items-center justify-center p-4 relative';
+
+  container.appendChild(ConnectionBanner());
 
   const networkPos = document.createElement('div');
   networkPos.className = 'absolute top-4 right-4';

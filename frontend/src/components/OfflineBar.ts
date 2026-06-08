@@ -1,12 +1,14 @@
 import { onSyncChange } from '../lib/syncQueue';
-import { isOnline } from '../lib/network';
+import { isOnline, onNetworkChange } from '../lib/network';
 
 export function OfflineBar(): HTMLElement {
   const el = document.createElement('div');
   el.className = 'offline-bar';
   el.style.display = 'none';
+  let pendingCount = 0;
 
   function update(count: number): void {
+    pendingCount = count;
     if (count > 0) {
       el.style.display = 'flex';
       const label = count === 1 ? 'registro' : 'registros';
@@ -22,9 +24,12 @@ export function OfflineBar(): HTMLElement {
     }
   }
 
-  const unsub = onSyncChange(update);
-  el.dataset.unsub = 'true';
-  (el as HTMLElement & { _unsub?: () => void })._unsub = unsub;
+  const unsubSync = onSyncChange(update);
+  const unsubNet = onNetworkChange(() => update(pendingCount));
+  (el as HTMLElement & { _unsub?: () => void })._unsub = () => {
+    unsubSync();
+    unsubNet();
+  };
 
   return el;
 }

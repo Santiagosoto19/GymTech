@@ -25,7 +25,9 @@ export function TrainerRoutines(): HTMLElement {
         <select id="routine-select" class="input-field"><option value="">Rutina...</option></select>
         <select id="client-select" class="input-field"><option value="">Cliente...</option></select>
         <button class="btn-primary col-span-2">Asignar</button>
+        <button type="button" id="assign-all-btn" class="btn-secondary col-span-2">Asignar a todos los clientes</button>
       </form>
+      <p id="assign-msg" class="text-sm mt-2 hidden"></p>
     </div>
     <div id="routines-list" class="space-y-2"></div>
   `;
@@ -87,8 +89,46 @@ export function TrainerRoutines(): HTMLElement {
 
   content.querySelector('#assign-form')!.addEventListener('submit', async (e) => {
     e.preventDefault();
-    await api.activity.assignRoutine(routineSelect.value, clientSelect.value);
-    alert('Rutina asignada al cliente');
+    const msg = content.querySelector('#assign-msg') as HTMLElement;
+    try {
+      await api.activity.assignRoutine(routineSelect.value, clientSelect.value);
+      msg.textContent = 'Rutina asignada al cliente';
+      msg.className = 'text-sm mt-2 text-success';
+      msg.classList.remove('hidden');
+    } catch (err) {
+      msg.textContent = (err as { message?: string }).message || 'Error';
+      msg.className = 'text-sm mt-2 text-danger';
+      msg.classList.remove('hidden');
+    }
+  });
+
+  content.querySelector('#assign-all-btn')!.addEventListener('click', async () => {
+    const msg = content.querySelector('#assign-msg') as HTMLElement;
+    const routineId = routineSelect.value;
+    if (!routineId) {
+      msg.textContent = 'Selecciona una rutina';
+      msg.className = 'text-sm mt-2 text-danger';
+      msg.classList.remove('hidden');
+      return;
+    }
+    const assigned = await api.activity.getAssignedClients();
+    const clientIds = assigned.map((a) => a.clientId);
+    if (!clientIds.length) {
+      msg.textContent = 'No hay clientes asignados';
+      msg.className = 'text-sm mt-2 text-warning';
+      msg.classList.remove('hidden');
+      return;
+    }
+    try {
+      await Promise.all(clientIds.map((id) => api.activity.assignRoutine(routineId, id)));
+      msg.textContent = `Rutina asignada a ${clientIds.length} cliente(s)`;
+      msg.className = 'text-sm mt-2 text-success';
+      msg.classList.remove('hidden');
+    } catch (err) {
+      msg.textContent = (err as { message?: string }).message || 'Error';
+      msg.className = 'text-sm mt-2 text-danger';
+      msg.classList.remove('hidden');
+    }
   });
 
   return Layout('Rutinas', content, 'Entrenador');
