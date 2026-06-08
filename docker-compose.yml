@@ -1,206 +1,261 @@
 version: '3.8'
 
 services:
-  # API Gateway
   gateway:
     build:
       context: ./gateway
       dockerfile: Dockerfile
     container_name: gymtech-gateway
     ports:
-      - "3000:3000"
+      - "${GATEWAY_PORT:-8080}:8080"
     environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - AUTH_SERVICE_URL=http://auth-service:3001
-      - MEMBERSHIP_SERVICE_URL=http://membership-service:3002
-      - ACTIVITY_SERVICE_URL=http://activity-service:3003
-      - REPORTING_SERVICE_URL=http://reporting-service:3004
-      - NOTIFICATION_SERVICE_URL=http://notification-service:3005
+      NODE_ENV: production
+      PORT: 8080
+      JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:5173}
+      AUTH_SERVICE_URL: http://auth-service:3001
+      MEMBERSHIP_SERVICE_URL: http://membership-service:3002
+      ACTIVITY_SERVICE_URL: http://activity-service:3003
+      REPORTING_SERVICE_URL: http://reporting-service:3004
+      NOTIFICATION_SERVICE_URL: http://notification-service:3005
     depends_on:
-      - auth-service
-      - membership-service
-      - activity-service
-      - reporting-service
-      - notification-service
+      auth-service:
+        condition: service_started
+      membership-service:
+        condition: service_started
+      activity-service:
+        condition: service_started
+      reporting-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
     networks:
-      - gymtech-network
+      - gymtech_internal
+      - gymtech_public
     restart: unless-stopped
 
-  # Auth Service
   auth-service:
     build:
-      context: ./services/auth-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/auth-service/Dockerfile
     container_name: gymtech-auth-service
     environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - DB_HOST=auth-db
-      - DB_PORT=5432
-      - DB_NAME=auth_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - JWT_SECRET=${AUTH_JWT_SECRET}
+      NODE_ENV: production
+      PORT: 3001
+      DB_HOST: auth-db
+      DB_PORT: 5432
+      DB_NAME: ${AUTH_DB_NAME:-auth_db}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
     depends_on:
-      - auth-db
+      auth-db:
+        condition: service_healthy
     networks:
-      - gymtech-network
+      - gymtech_internal
     restart: unless-stopped
 
-  # Membership Service
   membership-service:
     build:
-      context: ./services/membership-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/membership-service/Dockerfile
     container_name: gymtech-membership-service
     environment:
-      - NODE_ENV=production
-      - PORT=3002
-      - DB_HOST=membership-db
-      - DB_PORT=5432
-      - DB_NAME=membership_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      NODE_ENV: production
+      PORT: 3002
+      DB_HOST: membership-db
+      DB_PORT: 5432
+      DB_NAME: ${MEMBERSHIP_DB_NAME:-membership_db}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     depends_on:
-      - membership-db
+      membership-db:
+        condition: service_healthy
     networks:
-      - gymtech-network
+      - gymtech_internal
     restart: unless-stopped
 
-  # Activity Service
   activity-service:
     build:
-      context: ./services/activity-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/activity-service/Dockerfile
     container_name: gymtech-activity-service
     environment:
-      - NODE_ENV=production
-      - PORT=3003
-      - DB_HOST=activity-db
-      - DB_PORT=5432
-      - DB_NAME=activity_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      NODE_ENV: production
+      PORT: 3003
+      DB_HOST: activity-db
+      DB_PORT: 5432
+      DB_NAME: ${ACTIVITY_DB_NAME:-activity_db}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     depends_on:
-      - activity-db
+      activity-db:
+        condition: service_healthy
     networks:
-      - gymtech-network
+      - gymtech_internal
     restart: unless-stopped
 
-  # Reporting Service
   reporting-service:
     build:
-      context: ./services/reporting-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/reporting-service/Dockerfile
     container_name: gymtech-reporting-service
     environment:
-      - NODE_ENV=production
-      - PORT=3004
-      - DB_HOST=reporting-db
-      - DB_PORT=5432
-      - DB_NAME=reporting_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      NODE_ENV: production
+      PORT: 3004
+      DB_HOST: reporting-db
+      DB_PORT: 5432
+      DB_NAME: ${REPORTING_DB_NAME:-reporting_db}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     depends_on:
-      - reporting-db
+      reporting-db:
+        condition: service_healthy
     networks:
-      - gymtech-network
+      - gymtech_internal
     restart: unless-stopped
 
-  # Notification Service
   notification-service:
     build:
-      context: ./services/notification-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/notification-service/Dockerfile
     container_name: gymtech-notification-service
     environment:
-      - NODE_ENV=production
-      - PORT=3005
-      - DB_HOST=notification-db
-      - DB_PORT=5432
-      - DB_NAME=notification_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      NODE_ENV: production
+      PORT: 3005
+      DB_HOST: notification-db
+      DB_PORT: 5432
+      DB_NAME: ${NOTIFICATION_DB_NAME:-notification_db}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     depends_on:
-      - notification-db
+      notification-db:
+        condition: service_healthy
     networks:
-      - gymtech-network
+      - gymtech_internal
     restart: unless-stopped
 
-  # Databases
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: gymtech-frontend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    environment:
+      NODE_ENV: production
+      API_GATEWAY_URL: http://gateway:8080
+    depends_on:
+      - gateway
+    networks:
+      - gymtech_public
+    restart: unless-stopped
+
   auth-db:
     image: postgres:16-alpine
     container_name: gymtech-auth-db
     environment:
-      - POSTGRES_DB=auth_db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      POSTGRES_DB: ${AUTH_DB_NAME:-auth_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
-      - auth-db-data:/var/lib/postgresql/data
+      - auth_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${AUTH_DB_NAME:-auth_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
-      - gymtech-network
+      - gymtech_internal
     restart: unless-stopped
 
   membership-db:
     image: postgres:16-alpine
     container_name: gymtech-membership-db
     environment:
-      - POSTGRES_DB=membership_db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      POSTGRES_DB: ${MEMBERSHIP_DB_NAME:-membership_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
-      - membership-db-data:/var/lib/postgresql/data
+      - membership_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${MEMBERSHIP_DB_NAME:-membership_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
-      - gymtech-network
+      - gymtech_internal
     restart: unless-stopped
 
   activity-db:
     image: postgres:16-alpine
     container_name: gymtech-activity-db
     environment:
-      - POSTGRES_DB=activity_db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      POSTGRES_DB: ${ACTIVITY_DB_NAME:-activity_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
-      - activity-db-data:/var/lib/postgresql/data
+      - activity_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${ACTIVITY_DB_NAME:-activity_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
-      - gymtech-network
+      - gymtech_internal
     restart: unless-stopped
 
   reporting-db:
     image: postgres:16-alpine
     container_name: gymtech-reporting-db
     environment:
-      - POSTGRES_DB=reporting_db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      POSTGRES_DB: ${REPORTING_DB_NAME:-reporting_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
-      - reporting-db-data:/var/lib/postgresql/data
+      - reporting_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${REPORTING_DB_NAME:-reporting_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
-      - gymtech-network
+      - gymtech_internal
     restart: unless-stopped
 
   notification-db:
     image: postgres:16-alpine
     container_name: gymtech-notification-db
     environment:
-      - POSTGRES_DB=notification_db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      POSTGRES_DB: ${NOTIFICATION_DB_NAME:-notification_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
-      - notification-db-data:/var/lib/postgresql/data
+      - notification_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${NOTIFICATION_DB_NAME:-notification_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
-      - gymtech-network
+      - gymtech_internal
     restart: unless-stopped
 
 volumes:
-  auth-db-data:
-  membership-db-data:
-  activity-db-data:
-  reporting-db-data:
-  notification-db-data:
+  auth_pgdata:
+  membership_pgdata:
+  activity_pgdata:
+  reporting_pgdata:
+  notification_pgdata:
 
 networks:
-  gymtech-network:
+  gymtech_internal:
+    driver: bridge
+  gymtech_public:
     driver: bridge
