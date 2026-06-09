@@ -1,12 +1,21 @@
-FROM node:20-alpine
-
+FROM node:20-alpine AS deps
 WORKDIR /app
+COPY services/reporting-service/package*.json ./
+RUN npm ci --omit=dev
 
-COPY package*.json ./
-RUN npm install --production
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY services/reporting-service/package*.json ./
+RUN npm ci
+COPY services/reporting-service/ ./
+RUN npm run build
 
-COPY . .
-
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY services/reporting-service/package.json ./
 EXPOSE 3004
-
-CMD ["npm", "start"]
+USER node
+CMD ["node", "dist/server.js"]
