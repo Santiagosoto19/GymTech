@@ -7,6 +7,8 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./gateway/src:/app/src
+      - ./shared:/app/shared
+      - ./shared:/shared
     environment:
       - NODE_ENV=development
     command: npm run dev
@@ -17,6 +19,8 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./services/auth-service/src:/app/src
+      - ./shared:/app/shared
+      - ./shared:/shared
     environment:
       - NODE_ENV=development
     command: npm run dev
@@ -29,6 +33,8 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./services/membership-service/src:/app/src
+      - ./shared:/app/shared
+      - ./shared:/shared
     environment:
       - NODE_ENV=development
     command: npm run dev
@@ -41,6 +47,8 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./services/activity-service/src:/app/src
+      - ./shared:/app/shared
+      - ./shared:/shared
     environment:
       - NODE_ENV=development
     command: npm run dev
@@ -53,6 +61,8 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./services/reporting-service/src:/app/src
+      - ./shared:/app/shared
+      - ./shared:/shared
     environment:
       - NODE_ENV=development
     command: npm run dev
@@ -65,11 +75,27 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./services/notification-service/src:/app/src
+      - ./shared:/app/shared
+      - ./shared:/shared
     environment:
       - NODE_ENV=development
     command: npm run dev
     ports:
       - "3005:3005"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    environment:
+      - NODE_ENV=development
+      - API_GATEWAY_URL=http://localhost:3000
+    command: npm run dev
+    ports:
+      - "8087:80"
 
   auth-db:
     ports:
